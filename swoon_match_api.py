@@ -72,8 +72,15 @@ def match():
         (df['sexual_orientation'] == f'interested in {target_gender}')
     ].copy()
 
-    scores = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1).astype(int)
-    filtered_df['match_score'] = scores
+        if filtered_df.empty:
+        return jsonify([])
+
+    scores = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
+
+    if isinstance(scores, pd.DataFrame):
+        return jsonify({"error": "Scoring returned multiple columns. Please check match function."}), 500
+
+    filtered_df['match_score'] = scores.astype(int)
     top_matches = filtered_df.sort_values(by='match_score', ascending=False).head(3)
 
     results = top_matches[['name', 'match_score']].to_dict(orient='records')
