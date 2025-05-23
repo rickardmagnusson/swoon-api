@@ -50,9 +50,29 @@ def advanced_score_match(row, user_data):
 @app.route('/match', methods=['POST'])
 def match():
     user_data = request.json
-    scored_df = df.copy()
-    scored_df['match_score'] = scored_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
-    top_matches = scored_df.sort_values(by='match_score', ascending=False).head(3)
+
+    # Determine who the user is interested in
+    target_gender = user_data['gender']
+    target_orientation = user_data['sexual_orientation']
+
+    if target_orientation == 'interested in women':
+        desired_gender = 'woman'
+    elif target_orientation == 'interested in men':
+        desired_gender = 'man'
+    else:
+        return jsonify([])  # No valid preference
+
+    # Filter dataset based on gender + orientation compatibility
+    filtered_df = df[
+        (df['gender'] == desired_gender) &
+        (df['sexual_orientation'] == f'interested in {target_gender}')
+    ].copy()
+
+    # Score matches
+    filtered_df['match_score'] = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
+    top_matches = filtered_df.sort_values(by='match_score', ascending=False).head(3)
+
+    # Return results
     results = top_matches[['name', 'match_score']].to_dict(orient='records')
     return jsonify(results)
 
