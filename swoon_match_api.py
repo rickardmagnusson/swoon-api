@@ -2,6 +2,8 @@ import pandas as pd
 import ast
 import os
 from datetime import datetime
+from flask import Flask, request, jsonify
+app = Flask(__name__)  # <--- This is critical
 
 # Load your database
 df = pd.read_csv('Database.csv')
@@ -45,25 +47,14 @@ def advanced_score_match(row, user_data):
     score += 8 if row['activity_level'].strip().lower() == user_data['activity_level'].strip().lower() else -2
     return score
 
-# Example user data (replace with actual input)
-user_profile = {
-    "relationship_goal": "long-term",
-    "traits": ["Witty", "Quick", "Good-looking"],
-    "must_haves": ["Honesty", "Down-to-earth"],
-    "deal_breakers": ["Neuroticism", "Bad hygiene"],
-    "desired_qualities": ["Respect for space", "Open communication"],
-    "life_values": ["Personal space", "Trust", "Independence"],
-    "conflict_resolution": "Deal with it head-on",
-    "love_languages": ["Words of affirmation", "Receiving gifts"],
-    "weekend_preference": "Go out—camping and outdoors",
-    "planning_style": "Balanced",
-    "activity_level": "Pretty active"
-}
-
-# Score and sort
-df['match_score'] = df.apply(lambda row: advanced_score_match(row, user_profile), axis=1)
-df_sorted = df.sort_values(by='match_score', ascending=False)
-print(df_sorted[['name', 'match_score']].head(10))
+@app.route('/match', methods=['POST'])
+def match():
+    user_data = request.json
+    scored_df = df.copy()
+    scored_df['match_score'] = scored_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
+    top_matches = scored_df.sort_values(by='match_score', ascending=False).head(3)
+    results = top_matches[['name', 'match_score']].to_dict(orient='records')
+    return jsonify(results)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 10000))  # default for local testing
