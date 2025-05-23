@@ -72,7 +72,9 @@ def match():
         (df['sexual_orientation'] == f'interested in {target_gender}')
     ].copy()
 
-    filtered_df['match_score'] = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
+    scores = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
+    filtered_df = filtered_df.copy()
+    filtered_df['match_score'] = scores
     top_matches = filtered_df.sort_values(by='match_score', ascending=False).head(3)
 
     results = top_matches[['name', 'match_score']].to_dict(orient='records')
