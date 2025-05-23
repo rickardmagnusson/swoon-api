@@ -3,6 +3,7 @@ import ast
 import os
 from datetime import datetime
 from flask import Flask, request, jsonify
+
 app = Flask(__name__)  # <--- This is critical
 
 # Load your database
@@ -72,7 +73,7 @@ def match():
         (df['sexual_orientation'] == f'interested in {target_gender}')
     ].copy()
 
-        if filtered_df.empty:
+    if filtered_df.empty:
         return jsonify([])
 
     scores = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
