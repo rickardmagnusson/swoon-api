@@ -1,5 +1,6 @@
 import pandas as pd
 import ast
+import os
 from datetime import datetime
 
 # Load your database
@@ -63,3 +64,7 @@ user_profile = {
 df['match_score'] = df.apply(lambda row: advanced_score_match(row, user_profile), axis=1)
 df_sorted = df.sort_values(by='match_score', ascending=False)
 print(df_sorted[['name', 'match_score']].head(10))
+
+if __name__ == '__main__':
+    port = int(os.environ.get('PORT', 10000))  # default for local testing
+    app.run(host='0.0.0.0', port=port)
