@@ -3,8 +3,7 @@ import ast
 import os
 from datetime import datetime
 from flask import Flask, request, jsonify
-
-app = Flask(__name__)  # <--- This is critical
+app = Flask(__name__)
 
 # Load your database
 df = pd.read_csv('Database.csv')
@@ -23,7 +22,6 @@ list_columns = ['traits', 'must_haves', 'deal_breakers', 'desired_qualities', 'l
 for col in list_columns:
     df[col] = df[col].apply(parse_and_clean_list)
 
-# Define the scoring function
 def advanced_score_match(row, user_data):
     def get_set_score(user_list, match_list, full_weight=10, partial_weight=5, min_match=3):
         matches = len(set(user_list) & set(match_list))
@@ -60,12 +58,14 @@ def match():
     target_gender = user_data['gender']
     target_orientation = user_data['sexual_orientation']
 
-    # Who this user wants to date
+    print(f"Incoming user: gender={target_gender}, interested in={target_orientation}")
+
     if target_orientation == 'interested in women':
         desired_gender = 'woman'
     elif target_orientation == 'interested in men':
         desired_gender = 'man'
     else:
+        print("Unknown orientation, returning empty list.")
         return jsonify([])
 
     filtered_df = df[
@@ -73,20 +73,21 @@ def match():
         (df['sexual_orientation'] == f'interested in {target_gender}')
     ].copy()
 
+    print(f"Filtered candidates: {len(filtered_df)}")
+    print(filtered_df[['name', 'gender', 'sexual_orientation']].to_string())
+
     if filtered_df.empty:
+        print("No matches found after gender/orientation filter.")
         return jsonify([])
 
-    scores = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
-
-    if isinstance(scores, pd.DataFrame):
-        return jsonify({"error": "Scoring returned multiple columns. Please check match function."}), 500
-
-    filtered_df['match_score'] = scores.astype(int)
+    scores = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1).astype(int)
+    filtered_df['match_score'] = scores
     top_matches = filtered_df.sort_values(by='match_score', ascending=False).head(3)
 
     results = top_matches[['name', 'match_score']].to_dict(orient='records')
+    print("Top matches returned:", results)
     return jsonify(results)
 
 if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 10000))  # default for local testing
+    port = int(os.environ.get('PORT', 10000))
     app.run(host='0.0.0.0', port=port)
