@@ -51,28 +51,30 @@ def advanced_score_match(row, user_data):
 def match():
     user_data = request.json
 
-    # Determine who the user is interested in
+    required_fields = ['gender', 'sexual_orientation']
+    for field in required_fields:
+        if field not in user_data:
+            return jsonify({"error": f"Missing required field: {field}"}), 400
+
     target_gender = user_data['gender']
     target_orientation = user_data['sexual_orientation']
 
+    # Who this user wants to date
     if target_orientation == 'interested in women':
         desired_gender = 'woman'
     elif target_orientation == 'interested in men':
         desired_gender = 'man'
     else:
-        return jsonify([])  # No valid preference
+        return jsonify([])
 
-    # Filter dataset based on gender + orientation compatibility
     filtered_df = df[
         (df['gender'] == desired_gender) &
         (df['sexual_orientation'] == f'interested in {target_gender}')
     ].copy()
 
-    # Score matches
     filtered_df['match_score'] = filtered_df.apply(lambda row: advanced_score_match(row, user_data), axis=1)
     top_matches = filtered_df.sort_values(by='match_score', ascending=False).head(3)
 
-    # Return results
     results = top_matches[['name', 'match_score']].to_dict(orient='records')
     return jsonify(results)
 
